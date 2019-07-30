@@ -155,6 +155,69 @@ final class BitmapUtils {
     return bitmap;
   }
 
+
+  static Bitmap decodeStreamByNet(Source source, Request request) throws IOException {
+    ExceptionCatchingSource exceptionCatchingSource = new ExceptionCatchingSource(source);
+    BufferedSource bufferedSource = Okio.buffer(exceptionCatchingSource);
+    Bitmap bitmap = SDK_INT >= 28
+            ? decodeStreamPByNet(request, bufferedSource)
+            : decodeStreamPrePByNet(request, bufferedSource);
+    exceptionCatchingSource.throwIfCaught();
+    return bitmap;
+  }
+
+  @RequiresApi(28)
+  @SuppressLint("Override")
+  private static Bitmap decodeStreamPByNet(Request request, BufferedSource bufferedSource)
+          throws IOException {
+
+    byte[] bytes =  bufferedSource.readByteArray();
+    byte[] key = HexString.hexToBuffer("1562704A434C34F7");
+    byte[] finalBytes  = EncryptionUtil.encryptionByKey(bytes,key,true);
+    ImageDecoder.Source imageSource =
+            ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
+    return decodeImageSource(imageSource, request);
+  }
+
+  private static Bitmap decodeStreamPrePByNet(Request request, BufferedSource bufferedSource)
+          throws IOException {
+    boolean isWebPFile = Utils.isWebPFile(bufferedSource);
+    boolean isPurgeable = request.purgeable && SDK_INT < Build.VERSION_CODES.LOLLIPOP;
+    BitmapFactory.Options options = createBitmapOptions(request);
+    boolean calculateSize = requiresInSampleSize(options);
+
+    Bitmap bitmap;
+    // We decode from a byte array because, a) when decoding a WebP network stream, BitmapFactory
+    // throws a JNI Exception, so we workaround by decoding a byte array, or b) user requested
+    // purgeable, which only affects bitmaps decoded from byte arrays.
+//    if (isWebPFile || isPurgeable) {
+      byte[] bytes =  bufferedSource.readByteArray();
+      byte[] key = HexString.hexToBuffer("1562704A434C34F7");
+      byte[] finalBytes  = EncryptionUtil.encryptionByKey(bytes,key,true);
+      if (calculateSize) {
+
+        BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
+        calculateInSampleSize(request.targetWidth, request.targetHeight,
+                checkNotNull(options, "options == null"), request);
+      }
+      bitmap = BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
+//    } else {
+//      //todo
+//      if (calculateSize) {
+//
+//        BitmapFactory.decodeStream(bufferedSource.peek().inputStream(), null, options);
+//        calculateInSampleSize(request.targetWidth, request.targetHeight,
+//                checkNotNull(options, "options == null"), request);
+//      }
+//      bitmap = BitmapFactory.decodeStream(bufferedSource.inputStream(), null, options);
+//    }
+    if (bitmap == null) {
+      // Treat null as an IO exception, we will eventually retry.
+      throw new IOException("Failed to decode bitmap.");
+    }
+    return bitmap;
+  }
+
   static Bitmap decodeResource(Context context, Request request)
       throws IOException {
     if (SDK_INT >= 28) {

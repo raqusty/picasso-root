@@ -22,6 +22,7 @@
       android:allowBackup="false"
       android:supportsRtl="false"
       android:theme="@style/Theme.PicassoSample"
+      android:networkSecurityConfig="@xml/network_security_config"
       tools:ignore="GoogleAppIndexingWarning">
 
     <activity

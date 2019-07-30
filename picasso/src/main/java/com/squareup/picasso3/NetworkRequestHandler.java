@@ -78,7 +78,8 @@ final class NetworkRequestHandler extends RequestHandler {
           stats.dispatchDownloadFinished(body.contentLength());
         }
         try {
-          Bitmap bitmap = decodeStream(body.source(), request);
+          Bitmap bitmap = BitmapUtils.decodeStreamByNet(body.source(), request);
+          //
           callback.onSuccess(new Result(bitmap, loadedFrom));
         } catch (IOException e) {
           body.close();

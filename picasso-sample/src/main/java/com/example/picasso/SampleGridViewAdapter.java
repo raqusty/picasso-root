@@ -44,6 +44,7 @@ final class SampleGridViewAdapter extends BaseAdapter {
         .placeholder(R.drawable.placeholder) //
         .error(R.drawable.error) //
         .fit() //
+
         .tag(context) //
         .into(view);
 
@@ -55,7 +56,7 @@ final class SampleGridViewAdapter extends BaseAdapter {
   }
 
   @Override public String getItem(int position) {
-    return urls.get(position);
+    return "http://pim.ycw.com/common/pic/201907/30/c7849c339b11129acd996e2103b11989";
   }
 
   @Override public long getItemId(int position) {
