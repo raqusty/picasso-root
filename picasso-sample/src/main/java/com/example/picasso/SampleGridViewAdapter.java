@@ -40,11 +40,10 @@ final class SampleGridViewAdapter extends BaseAdapter {
 
     // Trigger the download of the URL asynchronously into the image view.
     PicassoProvider.get() //
-        .load(url) //
+        .load(url)
         .placeholder(R.drawable.placeholder) //
         .error(R.drawable.error) //
         .fit() //
-
         .tag(context) //
         .into(view);
 
@@ -56,7 +55,8 @@ final class SampleGridViewAdapter extends BaseAdapter {
   }
 
   @Override public String getItem(int position) {
-    return "http://pim.ycw.com/common/pic/201907/30/c7849c339b11129acd996e2103b11989";
+//    return "http://pim.ycw.com/common/pic/201907/30/c7849c339b11129acd996e2103b11989";
+    return "http://pim.ycw.com/chat/pic/201907/31/f28f8fbfe3bfc6a04ec254e53d6e97dd";
   }
 
   @Override public long getItemId(int position) {

@@ -22,6 +22,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.Size;
 import android.util.TypedValue;
 import androidx.annotation.DrawableRes;
@@ -30,6 +31,13 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
 import okio.Buffer;
 import okio.BufferedSource;
 import okio.ForwardingSource;
@@ -170,12 +178,29 @@ final class BitmapUtils {
   @SuppressLint("Override")
   private static Bitmap decodeStreamPByNet(Request request, BufferedSource bufferedSource)
           throws IOException {
-
     byte[] bytes =  bufferedSource.readByteArray();
-    byte[] key = HexString.hexToBuffer("1562704A434C34F7");
-    byte[] finalBytes  = EncryptionUtil.encryptionByKey(bytes,key,true);
-    ImageDecoder.Source imageSource =
-            ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
+    String cipher = request.getCipher();
+    ImageDecoder.Source imageSource;
+    if (TextUtils.isEmpty(cipher)){
+      imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
+    }else {
+      byte[] key = HexString.hexToBuffer(cipher);
+      byte[] finalBytes  = new byte[0];
+      try {
+        finalBytes = AESHelper.decrypt(bytes,key);
+      } catch (NoSuchPaddingException e) {
+        e.printStackTrace();
+      } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        e.printStackTrace();
+      }
+      imageSource = ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
+    }
     return decodeImageSource(imageSource, request);
   }
 
@@ -186,14 +211,29 @@ final class BitmapUtils {
     BitmapFactory.Options options = createBitmapOptions(request);
     boolean calculateSize = requiresInSampleSize(options);
 
-    Bitmap bitmap;
+    Bitmap bitmap = null;
     // We decode from a byte array because, a) when decoding a WebP network stream, BitmapFactory
     // throws a JNI Exception, so we workaround by decoding a byte array, or b) user requested
     // purgeable, which only affects bitmaps decoded from byte arrays.
-//    if (isWebPFile || isPurgeable) {
+
+    String cipher = request.getCipher();
+    if (!TextUtils.isEmpty(cipher)){//如果有秘钥，就解密后再显示
       byte[] bytes =  bufferedSource.readByteArray();
-      byte[] key = HexString.hexToBuffer("1562704A434C34F7");
-      byte[] finalBytes  = EncryptionUtil.encryptionByKey(bytes,key,true);
+      byte[] key = HexString.hexToBuffer(cipher);
+      byte[] finalBytes  = new byte[0];
+      try {
+        finalBytes = AESHelper.decrypt(bytes,key);
+      } catch (NoSuchPaddingException e) {
+        e.printStackTrace();
+      } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        e.printStackTrace();
+      }
       if (calculateSize) {
 
         BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
@@ -201,16 +241,25 @@ final class BitmapUtils {
                 checkNotNull(options, "options == null"), request);
       }
       bitmap = BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
-//    } else {
-//      //todo
-//      if (calculateSize) {
-//
-//        BitmapFactory.decodeStream(bufferedSource.peek().inputStream(), null, options);
-//        calculateInSampleSize(request.targetWidth, request.targetHeight,
-//                checkNotNull(options, "options == null"), request);
-//      }
-//      bitmap = BitmapFactory.decodeStream(bufferedSource.inputStream(), null, options);
-//    }
+    }else {
+      if (isWebPFile || isPurgeable) {
+        byte[] bytes = bufferedSource.readByteArray();
+        if (calculateSize) {
+          BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
+          calculateInSampleSize(request.targetWidth, request.targetHeight,
+                  checkNotNull(options, "options == null"), request);
+        }
+        bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
+      } else {
+        if (calculateSize) {
+          BitmapFactory.decodeStream(bufferedSource.peek().inputStream(), null, options);
+          calculateInSampleSize(request.targetWidth, request.targetHeight,
+                  checkNotNull(options, "options == null"), request);
+        }
+        bitmap = BitmapFactory.decodeStream(bufferedSource.inputStream(), null, options);
+      }
+
+    }
     if (bitmap == null) {
       // Treat null as an IO exception, we will eventually retry.
       throw new IOException("Failed to decode bitmap.");

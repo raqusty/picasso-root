@@ -204,6 +204,15 @@ public class RequestCreator {
     return this;
   }
 
+  /**
+   * 设置秘钥的
+   * @return
+   */
+  public RequestCreator cipher(String cipher) {
+    data.cipher(cipher);
+    return this;
+  }
+
   /** Internal use only. Used by {@link DeferredRequestCreator}. */
   RequestCreator unfit() {
     deferred = false;

@@ -110,6 +110,9 @@ public final class Request {
   @Nullable
   public final Object tag;
 
+  @Nullable
+  public String cipher  ;
+
   Request(Builder builder) {
     this.uri = builder.uri;
     this.resourceId = builder.resourceId;
@@ -130,6 +133,7 @@ public final class Request {
     this.rotationPivotY = builder.rotationPivotY;
     this.hasRotationPivot = builder.hasRotationPivot;
     this.purgeable = builder.purgeable;
+    this.cipher = builder.cipher;
     this.config = builder.config;
     this.priority = checkNotNull(builder.priority, "priority == null");
 
@@ -204,6 +208,11 @@ public final class Request {
       return String.valueOf(uri.getPath());
     }
     return Integer.toHexString(resourceId);
+  }
+
+  @Nullable
+  String getCipher() {
+    return cipher;
   }
 
   public boolean hasSize() {
@@ -288,6 +297,7 @@ public final class Request {
     @Nullable Object tag;
     int memoryPolicy;
     int networkPolicy;
+    @Nullable String cipher ;
 
     /** Start building a request using the specified {@link Uri}. */
     public Builder(@NonNull Uri uri) {
@@ -327,6 +337,7 @@ public final class Request {
       priority = request.priority;
       memoryPolicy = request.memoryPolicy;
       networkPolicy = request.networkPolicy;
+      cipher= request.cipher;
     }
 
     boolean hasImage() {
@@ -538,6 +549,12 @@ public final class Request {
     }
 
     @NonNull
+    public Builder cipher( String cipher) {
+      this.cipher = cipher;
+      return this;
+    }
+
+    @NonNull
     public Builder purgeable() {
       purgeable = true;
       return this;
@@ -661,4 +678,6 @@ public final class Request {
       return new Request(this);
     }
   }
+
+
 }
