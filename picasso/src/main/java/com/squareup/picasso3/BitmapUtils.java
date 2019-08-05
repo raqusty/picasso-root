@@ -185,21 +185,12 @@ final class BitmapUtils {
       imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
     }else {
       byte[] key = HexString.hexToBuffer(cipher);
-      byte[] finalBytes  = new byte[0];
-      try {
-        finalBytes = AESHelper.decrypt(bytes,key);
-      } catch (NoSuchPaddingException e) {
-        e.printStackTrace();
-      } catch (NoSuchAlgorithmException e) {
-        e.printStackTrace();
-      } catch (InvalidKeyException e) {
-        e.printStackTrace();
-      } catch (BadPaddingException e) {
-        e.printStackTrace();
-      } catch (IllegalBlockSizeException e) {
-        e.printStackTrace();
+      byte[] finalBytes  = AESHelper.encryptBytes(bytes,key);
+      if (finalBytes!=null){
+        imageSource = ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
+      }else {
+        imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
       }
-      imageSource = ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
     }
     return decodeImageSource(imageSource, request);
   }
@@ -220,27 +211,17 @@ final class BitmapUtils {
     if (!TextUtils.isEmpty(cipher)){//如果有秘钥，就解密后再显示
       byte[] bytes =  bufferedSource.readByteArray();
       byte[] key = HexString.hexToBuffer(cipher);
-      byte[] finalBytes  = new byte[0];
-      try {
-        finalBytes = AESHelper.decrypt(bytes,key);
-      } catch (NoSuchPaddingException e) {
-        e.printStackTrace();
-      } catch (NoSuchAlgorithmException e) {
-        e.printStackTrace();
-      } catch (InvalidKeyException e) {
-        e.printStackTrace();
-      } catch (BadPaddingException e) {
-        e.printStackTrace();
-      } catch (IllegalBlockSizeException e) {
-        e.printStackTrace();
+      byte[] finalBytes  = AESHelper.encryptBytes(bytes,key);
+      if (finalBytes!=null){
+        if (calculateSize) {
+          BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
+          calculateInSampleSize(request.targetWidth, request.targetHeight,
+                  checkNotNull(options, "options == null"), request);
+        }
+        bitmap = BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
+      }else {
+        bitmap = null;
       }
-      if (calculateSize) {
-
-        BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
-        calculateInSampleSize(request.targetWidth, request.targetHeight,
-                checkNotNull(options, "options == null"), request);
-      }
-      bitmap = BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
     }else {
       if (isWebPFile || isPurgeable) {
         byte[] bytes = bufferedSource.readByteArray();
