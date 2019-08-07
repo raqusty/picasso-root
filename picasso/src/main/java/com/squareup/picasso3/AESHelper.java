@@ -208,6 +208,7 @@ public class AESHelper {
         return false;
     }
 
+    @Nullable
     public static byte[] encryptBytes(byte[] key, byte[] sourceBytes) {
         ByteArrayInputStream in = null;
         ByteArrayOutputStream out = null;
@@ -216,6 +217,8 @@ public class AESHelper {
             out = new ByteArrayOutputStream();
 
             Cipher cipher = initAESCipher(key, Cipher.ENCRYPT_MODE);
+            if (cipher == null)
+                return null;
             BufferedInputStream bis = new BufferedInputStream(in);
             BufferedOutputStream bos = new BufferedOutputStream(out);
             byte[] buffer = new byte[1024 * 100];
@@ -257,6 +260,7 @@ public class AESHelper {
         return null;
     }
 
+    @Nullable
     public static byte[] decryptBytes(byte[] key, byte[] sourceBytes) {
         ByteArrayInputStream in = null;
         ByteArrayOutputStream out = null;
@@ -265,26 +269,34 @@ public class AESHelper {
             out = new ByteArrayOutputStream();
 
             Cipher cipher = initAESCipher(key, Cipher.DECRYPT_MODE);
+            if (cipher == null)
+                return null;
             BufferedInputStream bis = new BufferedInputStream(in);
             BufferedOutputStream bos = new BufferedOutputStream(out);
 
             byte[] buffer = new byte[1024 * 100 + 16];
             int length;
+            Log.d("demo", "decryptBytes begin->");
             while ((length = bis.read(buffer)) != -1) {
                 byte[] data = cipher.doFinal(buffer, 0, length);
                 Log.d("demo", "decryptBytes doFinal length->" + data.length);
                 bos.write(data, 0, data.length);
             }
+            Log.d("demo", "decryptBytes end->");
             byte[] data = out.toByteArray();
             bis.close();
             bos.close();
+            Log.i("linzehao","bos ");
             return data;
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            Log.i("linzehao","IOException "+e.getMessage());
         } catch (BadPaddingException e) {
             e.printStackTrace();
+            Log.i("linzehao","BadPaddingException "+e.getMessage());
         } catch (IllegalBlockSizeException e) {
             e.printStackTrace();
+            Log.i("linzehao","IllegalBlockSizeException "+e.getMessage());
         } finally {
             try {
                 if (in != null) {
@@ -302,6 +314,7 @@ public class AESHelper {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
         }
+        Log.i("linzehao","null ");
         return null;
     }
 

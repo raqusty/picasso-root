@@ -184,8 +184,7 @@ final class BitmapUtils {
     if (TextUtils.isEmpty(cipher)){
       imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
     }else {
-      byte[] key = HexString.hexToBuffer(cipher);
-      byte[] finalBytes  = AESHelper.encryptBytes(bytes,key);
+      byte[] finalBytes  = AESHelper.decryptBytes(cipher.getBytes(),bytes);
       if (finalBytes!=null){
         imageSource = ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
       }else {
@@ -211,7 +210,7 @@ final class BitmapUtils {
     if (!TextUtils.isEmpty(cipher)){//如果有秘钥，就解密后再显示
       byte[] bytes =  bufferedSource.readByteArray();
       byte[] key = HexString.hexToBuffer(cipher);
-      byte[] finalBytes  = AESHelper.encryptBytes(bytes,key);
+      byte[] finalBytes  = AESHelper.decryptBytes(cipher.getBytes(),bytes);
       if (finalBytes!=null){
         if (calculateSize) {
           BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);
