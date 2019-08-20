@@ -1,5 +1,6 @@
 package com.squareup.picasso3;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -32,34 +33,42 @@ public class AESHelper {
     private AESHelper() {
     }
 
-    public static byte[] encrypt(byte[] messageBytes, byte[] psBytes) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
-        return encrypt("AES/ECB/PKCS7Padding", messageBytes, psBytes);
+    public static String encrypt(byte[] messageBytes, String key) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        return encrypt("AES/ECB/PKCS7Padding", messageBytes, key);
     }
 
-    public static byte[] decrypt(byte[] messageBytes, byte[] psBytes) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
-        return decrypt("AES/ECB/PKCS7Padding", messageBytes, psBytes);
+    public static String decrypt(byte[] messageBytes, String key) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        return decrypt("AES/ECB/PKCS7Padding", messageBytes, key);
     }
 
-    public static byte[] encrypt(String algorithm, byte[] messageBytes, byte[] psBytes) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
-        if (messageBytes == null || psBytes == null) {
+    public static String encrypt(String algorithm, byte[] messageBytes, String key) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        if (messageBytes == null) {
             throw new NullPointerException();
+        }
+
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
         }
 
         final String ALGORITHM = "AES";
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(psBytes, ALGORITHM));
-        return cipher.doFinal(messageBytes);
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.substring(0, 16).getBytes(), ALGORITHM));
+        return HexString.bufferToHex(cipher.doFinal(messageBytes));
     }
 
-    public static byte[] decrypt(String algorithm, byte[] messageBytes, byte[] psBytes) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
-        if (messageBytes == null || psBytes == null) {
+    public static String decrypt(String algorithm, byte[] messageBytes, String key) throws NullPointerException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        if (messageBytes == null) {
             throw new NullPointerException();
+        }
+
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
         }
 
         final String ALGORITHM = "AES";
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(psBytes, ALGORITHM));
-        return cipher.doFinal(messageBytes);
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.substring(0, 16).getBytes(), ALGORITHM));
+        return new String(cipher.doFinal(messageBytes));
     }
 
     /**
@@ -70,20 +79,11 @@ public class AESHelper {
      * @return
      */
     @Nullable
-    private static Cipher initAESCipher(byte[] key, int cipherMode) {
-        Cipher cipher = null;
-        try {
-            final String ALGORITHM = "AES";
-            final String ALGORITHM_STR = "AES/ECB/PKCS7Padding";
-            cipher = Cipher.getInstance(ALGORITHM_STR);
-            cipher.init(cipherMode, new SecretKeySpec(key, ALGORITHM));
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+    private static Cipher initAESCipher(byte[] key, int cipherMode) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+        final String ALGORITHM = "AES";
+        final String ALGORITHM_STR = "AES/ECB/PKCS7Padding";
+        Cipher cipher = Cipher.getInstance(ALGORITHM_STR);
+        cipher.init(cipherMode, new SecretKeySpec(key, ALGORITHM));
         return cipher;
     }
 
@@ -95,14 +95,16 @@ public class AESHelper {
      * @param destFilePath
      * @return
      */
-    public static boolean encryptFile(byte[] key, String sourceFilePath, String destFilePath) {
+    public static boolean encryptFile(String key, String sourceFilePath, String destFilePath) throws NullPointerException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
+        }
+
         FileInputStream in = null;
         FileOutputStream out = null;
-        File destFile = null;
-        File sourceFile = null;
         try {
-            sourceFile = new File(sourceFilePath);
-            destFile = new File(destFilePath);
+            File sourceFile = new File(sourceFilePath);
+            File destFile = new File(destFilePath);
             if (sourceFile.exists() && sourceFile.isFile()) {
                 if (!destFile.getParentFile().exists()) {
                     destFile.getParentFile().mkdirs();
@@ -111,7 +113,7 @@ public class AESHelper {
                 in = new FileInputStream(sourceFile);
                 out = new FileOutputStream(destFile);
 
-                Cipher cipher = initAESCipher(key, Cipher.ENCRYPT_MODE);
+                Cipher cipher = initAESCipher(key.substring(0, 16).getBytes(), Cipher.ENCRYPT_MODE);
                 if (cipher == null )
                     return false;
                 BufferedInputStream bis = new BufferedInputStream(in);
@@ -130,10 +132,6 @@ public class AESHelper {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
         } finally {
             try {
                 if (out != null) {
@@ -153,14 +151,16 @@ public class AESHelper {
         return false;
     }
 
-    public static boolean decryptFile(byte[] key, String sourceFilePath, String destFilePath) {
+    public static boolean decryptFile(String key, String sourceFilePath, String destFilePath) throws NullPointerException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
+        }
+
         FileInputStream in = null;
         FileOutputStream out = null;
-        File destFile = null;
-        File sourceFile = null;
         try {
-            sourceFile = new File(sourceFilePath);
-            destFile = new File(destFilePath);
+            File sourceFile = new File(sourceFilePath);
+            File destFile = new File(destFilePath);
             if (sourceFile.exists() && sourceFile.isFile()) {
                 if (!destFile.getParentFile().exists()) {
                     destFile.getParentFile().mkdirs();
@@ -169,7 +169,7 @@ public class AESHelper {
                 in = new FileInputStream(sourceFile);
                 out = new FileOutputStream(destFile);
 
-                Cipher cipher = initAESCipher(key, Cipher.DECRYPT_MODE);
+                Cipher cipher = initAESCipher(key.substring(0, 16).getBytes(), Cipher.DECRYPT_MODE);
                 if (cipher == null )
                     return false;
                 BufferedOutputStream cipherOutputStream = new BufferedOutputStream(out);
@@ -183,12 +183,10 @@ public class AESHelper {
                 cipherOutputStream.close();
                 return true;
             }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
         } finally {
             try {
                 if (in != null) {
@@ -209,37 +207,31 @@ public class AESHelper {
     }
 
     @Nullable
-    public static byte[] encryptBytes(byte[] key, byte[] sourceBytes) {
+    public static byte[] encryptBytes(String key, byte[] sourceBytes) throws NullPointerException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
+        }
+
         ByteArrayInputStream in = null;
         ByteArrayOutputStream out = null;
         try {
             in = new ByteArrayInputStream(sourceBytes);
             out = new ByteArrayOutputStream();
 
-            Cipher cipher = initAESCipher(key, Cipher.ENCRYPT_MODE);
+            Cipher cipher = initAESCipher(key.substring(0, 16).getBytes(), Cipher.ENCRYPT_MODE);
             if (cipher == null)
                 return null;
-            BufferedInputStream bis = new BufferedInputStream(in);
-            BufferedOutputStream bos = new BufferedOutputStream(out);
             byte[] buffer = new byte[1024 * 100];
             int length;
-            while ((length = bis.read(buffer)) != -1) {
+            while ((length = in.read(buffer)) != -1) {
                 byte[] data = cipher.doFinal(buffer, 0, length);
                 Log.d("demo", "encryptBytes doFinal length->" + data.length);
-                bos.write(data, 0, data.length);
+                out.write(data, 0, data.length);
             }
             byte[] data = out.toByteArray();
-            bis.close();
-            bos.close();
             return data;
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
         } finally {
             try {
                 if (in != null) {
@@ -261,42 +253,32 @@ public class AESHelper {
     }
 
     @Nullable
-    public static byte[] decryptBytes(byte[] key, byte[] sourceBytes) {
+    public static byte[] decryptBytes(String key, byte[] sourceBytes) throws NullPointerException, BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+        if (TextUtils.isEmpty(key) || key.length() < 16) {
+            throw new BadPaddingException();
+        }
+
         ByteArrayInputStream in = null;
         ByteArrayOutputStream out = null;
         try {
             in = new ByteArrayInputStream(sourceBytes);
             out = new ByteArrayOutputStream();
 
-            Cipher cipher = initAESCipher(key, Cipher.DECRYPT_MODE);
+            Cipher cipher = initAESCipher(key.substring(0, 16).getBytes(), Cipher.DECRYPT_MODE);
             if (cipher == null)
                 return null;
-            BufferedInputStream bis = new BufferedInputStream(in);
-            BufferedOutputStream bos = new BufferedOutputStream(out);
 
             byte[] buffer = new byte[1024 * 100 + 16];
             int length;
-            Log.d("demo", "decryptBytes begin->");
-            while ((length = bis.read(buffer)) != -1) {
+            while ((length = in.read(buffer)) != -1) {
                 byte[] data = cipher.doFinal(buffer, 0, length);
                 Log.d("demo", "decryptBytes doFinal length->" + data.length);
-                bos.write(data, 0, data.length);
+                out.write(data, 0, data.length);
             }
-            Log.d("demo", "decryptBytes end->");
             byte[] data = out.toByteArray();
-            bis.close();
-            bos.close();
-            Log.i("linzehao","bos ");
             return data;
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            Log.i("linzehao","IOException "+e.getMessage());
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-            Log.i("linzehao","BadPaddingException "+e.getMessage());
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
-            Log.i("linzehao","IllegalBlockSizeException "+e.getMessage());
         } finally {
             try {
                 if (in != null) {
@@ -314,7 +296,6 @@ public class AESHelper {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
         }
-        Log.i("linzehao","null ");
         return null;
     }
 

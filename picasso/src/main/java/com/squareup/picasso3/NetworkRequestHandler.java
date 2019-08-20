@@ -15,6 +15,7 @@
  */
 package com.squareup.picasso3;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.NetworkInfo;
 import android.net.Uri;

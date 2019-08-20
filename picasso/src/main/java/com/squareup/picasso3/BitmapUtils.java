@@ -22,13 +22,17 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.os.Build;
+import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -184,8 +188,21 @@ final class BitmapUtils {
     if (TextUtils.isEmpty(cipher)){
       imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
     }else {
-      byte[] finalBytes  = AESHelper.decryptBytes(cipher.getBytes(),bytes);
-      if (finalBytes!=null){
+      byte[] finalBytes  = new byte[0];
+      try {
+        finalBytes = AESHelper.decryptBytes(cipher,bytes);
+      } catch (BadPaddingException e) {
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        e.printStackTrace();
+      } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        e.printStackTrace();
+      }
+      if (finalBytes!=null ){
         imageSource = ImageDecoder.createSource(ByteBuffer.wrap(finalBytes));
       }else {
         imageSource = ImageDecoder.createSource(ByteBuffer.wrap(bytes));
@@ -209,8 +226,20 @@ final class BitmapUtils {
     String cipher = request.getCipher();
     if (!TextUtils.isEmpty(cipher)){//如果有秘钥，就解密后再显示
       byte[] bytes =  bufferedSource.readByteArray();
-      byte[] key = HexString.hexToBuffer(cipher);
-      byte[] finalBytes  = AESHelper.decryptBytes(cipher.getBytes(),bytes);
+      byte[] finalBytes  = new byte[0];
+      try {
+        finalBytes = AESHelper.decryptBytes(cipher,bytes);
+      } catch (BadPaddingException e) {
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        e.printStackTrace();
+      } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        e.printStackTrace();
+      }
       if (finalBytes!=null){
         if (calculateSize) {
           BitmapFactory.decodeByteArray(finalBytes, 0, finalBytes.length, options);

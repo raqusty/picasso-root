@@ -28,13 +28,13 @@ final class SampleGridViewAdapter extends BaseAdapter {
 //    urls.addAll(copy);
 //    urls.addAll(copy);
 
-    urls.add("http://pim.ycw.com/chat/pic/201908/07/0ca93f97c9ac6fdf80296ef281da59c4");
-//    urls.add("http://pim.ycw.com/chat/pic/201908/07/aafb3a623d7dcbf2f3a4766a2f792ebe");
+    urls.add("http://pim.ycw.com/chat/pic/201908/08/f9666642e222bad3004e988f0bbdceee");
+    urls.add("http://pim.ycw.com/chat/pic/201908/08/d30446edfa5ccc7afcb490eacb787689  ");
 //    urls.add("http://pim.ycw.com/chat/pic/201908/07/9634f7e24f5c7f3032562922547a7bbf");
 //    urls.add("http://pim.ycw.com/chat/pic/201908/07/041cc2b01dbc3923caa28f8b4f1755a8");
 
-    ciphers.add("6109468507253570");
-//    ciphers.add("6109468507253570");
+    ciphers.add("2006592603092681");
+    ciphers.add("1981898608435563");
 //    ciphers.add("7104511375077615");
 //    ciphers.add("7104511375077615");
   }
